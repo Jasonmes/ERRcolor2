@@ -35,7 +35,7 @@ def magic(binary):
     return imgBlur
 
 
-for (lower, upper) in color2:
+for (lower, upper) in color1:
     lower = np.array(lower, dtype="uint8")  # 颜色下限
     upper = np.array(upper, dtype="uint8")  # 颜色上限
     # 提取需要的区域
@@ -47,7 +47,7 @@ for (lower, upper) in color2:
 
     # 侵蚀 膨胀 模糊
     binary = gray
-    for i in range(12):
+    for i in range(8):
         binary = binary
         binary = magic(binary)
         ret, binary = threshold(binary)
@@ -56,23 +56,30 @@ for (lower, upper) in color2:
     imgCanny = cv2.Canny(binary, 200, 300)
 
     # 划线
-    minLineLength = 5
-    maxLineGap = 70
+    minLineLength = 700
+    maxLineGap = 0.1
     lines = cv2.HoughLinesP(imgCanny,      # 导入轮廓图
-                            5,
+                            300,
                             np.pi / 180,
-                            100,
+                            50,
                             minLineLength,
                             maxLineGap)
-    print (lines)
+    print (len(lines))
 
-    for x1, y1, x2, y2 in lines[0]:
-        cv2.line(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    for i in range(len(lines)):
+        for x1, y1, x2, y2 in lines[i]:
+            cv2.line(image,
+                     (x1, y1),
+                     (x2, y2),
+                     (0, 0, 255), 2)
+
+
 
     # 窗口分别打开轮廓图和二值图
-    windows = ["imgCanny", "binary"]
-    pictures = [imgCanny, binary]
-    for i in range(2):
+    windows = ["imgCanny", "binary", "image"]
+    pictures = [imgCanny, binary, image]
+    for i in range(3):
+        print(i)
         cv2.namedWindow(windows[i], 0)
         cv2.resizeWindow(windows[i], 640, 480)
         cv2.imshow(windows[i], pictures[i])
