@@ -66,6 +66,7 @@ for (lower, upper) in color1:
                             maxLineGap)
     print (len(lines))
 
+    # 把线画进原图
     for i in range(len(lines)):
         for x1, y1, x2, y2 in lines[i]:
             cv2.line(image,
@@ -74,6 +75,105 @@ for (lower, upper) in color1:
                      (0, 0, 255), 2)
 
 
+    # 提取轮廓后，拟合外接多边形（矩形）
+    '''
+    _, contours, _ = cv2.findContours(binary,
+                                      cv2.RETR_EXTERNAL,
+                                      cv2.CHAIN_APPROX_SIMPLE)
+    print("len(contours)=%d" % (len(contours)))
+    print('\n================================\n')
+    for idx, c in enumerate(contours):
+        if len(c) < Config.min_contours:
+            continue
+
+        epsilon = Config.epsilon_start
+        while True:
+            approx = cv2.approxPolyDP(c,
+                                      epsilon,
+                                      True)
+            print("idx,epsilon,len(approx),len(c)=%d,%d,%d,%d" % (idx,
+                                                                  epsilon,
+                                                                  len(approx),
+                                                                len(c)))
+            if len(approx) < 4:
+                break
+            if math.fabs(cv2.contourArea(approx)) > Config.min_area:
+                if len(approx) > 4:
+                    epsilon += Config.epsilon_step
+                    print("epsilon=%d, count=%d" % (epsilon,
+                                                    len(approx)))
+                    continue
+                else:
+                    # for p in approx:
+                    #    cv2.circle(binary,(p[0][0],p[0][1]),8,(255,255,0),thickness=-1)
+                    approx = approx.reshape((4, 2))
+                    # 点重排序, [top-left, top-right, bottom-right, bottom-left]
+                    src_rect = order_points(approx)
+
+                    cv2.drawContours(image,
+                                     c,
+                                     -1,
+                                     (0, 255, 255),
+                                     1)
+                    cv2.line(image,
+                             (src_rect[0][0], src_rect[0][1]),
+                             (src_rect[1][0], src_rect[1][1]),
+                             color=(100, 255, 100))
+                    cv2.line(image,
+                             (src_rect[2][0], src_rect[2][1]),
+                             (src_rect[1][0], src_rect[1][1]),
+                             color=(100, 255, 100))
+                    cv2.line(image,
+                             (src_rect[2][0], src_rect[2][1]),
+                             (src_rect[3][0], src_rect[3][1]),
+                             color=(100, 255, 100))
+                    cv2.line(image, (src_rect[0][0],
+                                     src_rect[0][1]),
+                             (src_rect[3][0], src_rect[3][1]),
+                             color=(100, 255, 100))
+
+                    # 获取最小矩形包络
+                    rect = cv2.minAreaRect(approx)
+                    box = cv2.boxPoints(rect)
+                    box = np.int0(box)
+                    box = box.reshape(4, 2)
+                    box = order_points(box)
+                    print("approx->box")
+                    print(approx)
+                    print(src_rect)
+                    print(box)
+                    w, h = point_distance(box[0], box[1]), point_distance(box[1], box[2])
+                    print("w,h=%d,%d" % (w, h))
+                    # 透视变换
+                    dst_rect = np.array([
+                        [0, 0],
+                        [w - 1, 0],
+                        [w - 1, h - 1],
+                        [0, h - 1]],
+                        dtype="float32")
+                    M = cv2.getPerspectiveTransform(src_rect,
+                                                    dst_rect)
+                    warped = cv2.warpPerspective(image,
+                                                 M,
+                                                 (w, h))
+                    cv2.imwrite("transfer%d.png" % idx,
+                                warped,
+                                [int(cv2.IMWRITE_PNG_COMPRESSION), 9])
+                    break
+            else:
+                print("failed %d area=%f" % (idx, math.fabs(cv2.contourArea(approx))))
+                break
+
+    cv2.imwrite("4-contours.png",
+                binary,
+                [int(cv2.IMWRITE_PNG_COMPRESSION),
+                 9])
+    print("\n===寻找轮廓中的闭包，找出面积较大的区块，拟合成四边形，确定四边形的定点========\n")
+    cv2.imwrite("5-cut.png",
+                image,
+                [int(cv2.IMWRITE_PNG_COMPRESSION),
+                 9])
+    '''
 
     # 窗口分别打开轮廓图和二值图
     windows = ["imgCanny", "binary", "image"]
