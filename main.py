@@ -7,63 +7,72 @@
 import preprocessing
 import cv2
 import numpy as np
-# from matplotlib import pyplot as plt
 
-frame = preprocessing.image
+'''
+imgcanny
+提取轮廓 --- >> findcontour()
+drawcontours
+
+提取面积最大的轮廓， contourArea
+多边形包围轮廓， approxolyDP
+画出矩形 
+convexhull
+'''
+
+imgCanny = preprocessing.imgCanny
+image = preprocessing.image
 
 
-def line_fitness(pts, image, color=(0, 0, 255)):
-    h, w, ch = image.shape
-    [vx, vy, x, y] = cv2.fitLine(np.array(pts), cv2.DIST_L1, 0, 0.01, 0.01)
-    y1 = int((-x * vy / vx) + y)
-    y2 = int(((w - x) * vy / vx) + y)
-    cv2.line(image, (w - 1, y2), (0, y1), color, 2)
-    return image
+canvas = np.zeros(image.shape, np.uint8)
 
+# 提取轮廓
+cat, contours, hierarchy = cv2.findContours(imgCanny,
+                                            cv2.RETR_TREE,
+                                            cv2.CHAIN_APPROX_NONE)
 
-h, w, ch = frame.shape
-gray = cv2.cvtColor(frame,
-                    cv2.COLOR_BGR2GRAY)
-ret, Binary = cv2.threshold(gray, 0, 255,
-                            cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-dist = cv2.distanceTransform(Binary,
-                             cv2.DIST_L1,
-                             cv2.DIST_MASK_PRECISE)
-dist = dist / 15
-# 水平 垂直 投影 提取骨架
-result = np.zeros((h, w), dtype=np.uint8)
-ypts = []
-for row in range(h):
-    cx = 0
-    cy = 0
-    max_d = 0
-    for col in range(w):
-        d = dist[row][col]
-        if d > max_d:
-            max_d = d
-            cx = col
-            cy = row
-    result[cy][cx] = 255
-    ypts.append([cx, cy])
+# 提取面积最大的轮廓
+cnt = contours[0]
+area = cv2.contourArea(cnt)
+for cont in contours:
+    if cv2.contourArea(cont) > area:
+        cnt = cont
+        area = cv2.contourArea(cont)
 
-xpts = []
-for col in range(w):
-    cx = 0
-    cy = 0
-    max_d = 0
-    for row in range(h):
-        d = dist[row][col]
-        if d > max_d:
-            max_d = d
-            cx = col
-            cy = row
-    result[cy][cx] = 255
-    xpts.append([cx, cy])
+approx = cv2.approxPolyDP(cnt,
+                          30,
+                          True)
 
-frame = line_fitness(ypts, image=frame, color=(0, 0, 255))
-frame = line_fitness(xpts, image=frame, color=(255, 0, 0))
+# 2.寻找凸包，得到凸包的角点
+hull = cv2.convexHull(approx)
+# 把线画进图
+label = ['1', '2', '3', '4', '5',
+         '6', '7', '8', '9', '10']
+for i in range(len(hull)-1):
+    for x1, y1 in hull[i]:
+        # 给坐标做标记
+        # cv2.putText(canvas, label[i], (x1, y1), cv2.FONT_HERSHEY_PLAIN, 1.0, (0, 255, 0), thickness=1)
+        l = i+1
+        for x2, y2 in hull[l]:
+            cv2.line(canvas,
+                     (x1, y1),
+                     (x2, y2),   # approx[i+1]
+                     (0, 0, 255),
+                     1)
+'''
+# 画延长直线
+cv2.fillConvexPoly()
+gray = cv2.cvtColor(canvas, cv2.COLOR_RGB2GRAY)
+erzhi = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_TRIANGLE)
+print (erzhi)
+# edges = cv2.Canny(erzhi, 50, 150)
+# image = preprocessing.paiting_line(erzhi, image)
+'''
 
-cv2.namedWindow("Binary", 0)
-cv2.resizeWindow("Binary", 640, 480)
-cv2.imshow("Binary", frame)
-cv2.waitKey()
+cv2.fillConvexPoly(canvas, hull, (0, 255, 0))
+imgCanny = cv2.Canny(canvas, 200, 300)
+image = preprocessing.paiting_line(imgCanny, image)
+
+cv2.namedWindow('Contour', 0)
+cv2.resizeWindow('Contour', 640, 480)
+cv2.imshow('Contour', image)
+cv2.waitKey(0)

@@ -3,7 +3,8 @@
 import cv2
 import numpy as np
 
-image = cv2.imread('C_test1.png')
+image = cv2.imread('C_test1.PNG')
+
 
 color1 = [([0, 148, 178],
            [178, 255, 255])]
@@ -25,14 +26,39 @@ def threshold(gray):
 def magic(binary):
     # 侵蚀 和 膨胀
     dst = cv2.erode(binary, kernel=None, iterations=4)
-    dst2 = cv2.dilate(dst, kernel=None, iterations=5)
+    dst2 = cv2.dilate(dst, kernel=None, iterations=4)
 
     # 高斯模糊
     imgBlur = cv2.GaussianBlur(dst2, (3, 3), 0)
     # 中值滤波
     # imgBlur = cv2.medianBlur(dst2, 9)
     imgBlur = cv2.blur(imgBlur, (10, 10))
+    imgBlur = cv2.erode(imgBlur, kernel=None, iterations=4)
+
     return imgBlur
+
+
+# 给原图划线
+def paiting_line(imgCanny, image):
+    # 划线
+    minLineLength = 700  # 线段以像素为单位的最小长度，根据应用场景设置
+    maxLineGap = 0.01  # 为一条线段的最大允许间隔
+    lines = cv2.HoughLinesP(imgCanny,      # 导入轮廓图
+                            80,            # 线段以像素为单位的距离精度，double类型的，推荐用1.0
+                            np.pi / 3600,
+                            800,           # 值越大，基本上意味着检出的线段越长，检出的线段个数越少
+                            minLineLength,
+                            maxLineGap)
+
+    # 把线画进原图
+    for i in range(len(lines)):
+        for x1, y1, x2, y2 in lines[i]:
+            cv2.line(image,
+                     (x1, y1),
+                     (x2, y2),
+                     (0, 255, 0),
+                     5)
+    return image
 
 
 for (lower, upper) in color2:
@@ -56,24 +82,8 @@ for (lower, upper) in color2:
     imgCanny = cv2.Canny(binary, 200, 300)
 
     # 划线
-    minLineLength = 700
-    maxLineGap = 0.1
-    lines = cv2.HoughLinesP(imgCanny,      # 导入轮廓图
-                            300,
-                            np.pi / 180,
-                            50,
-                            minLineLength,
-                            maxLineGap)
-    print (len(lines))
+    # image = paiting_line(imgCanny, image)
 
-    # 把线画进原图
-    for i in range(len(lines)):
-        for x1, y1, x2, y2 in lines[i]:
-            cv2.line(image,
-                     (x1, y1),
-                     (x2, y2),
-                     (0, 0, 255),
-                     60)
     '''
     # 窗口分别打开轮廓图和二值图
     windows = ["imgCanny", "binary", "image"]
@@ -87,6 +97,7 @@ for (lower, upper) in color2:
     cv2.waitKey(0)
     # cv2.destroyAllWindows()
     '''
+
 
 
 
