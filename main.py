@@ -22,7 +22,7 @@ convexhull
 imgCanny = preprocessing.imgCanny
 image = preprocessing.image
 
-
+# 画一个同尺寸的图片
 canvas = np.zeros(image.shape, np.uint8)
 
 # 提取轮廓
@@ -32,11 +32,14 @@ cat, contours, hierarchy = cv2.findContours(imgCanny,
 
 # 提取面积最大的轮廓
 cnt = contours[0]
+
+'''
 area = cv2.contourArea(cnt)
 for cont in contours:
     if cv2.contourArea(cont) > area:
         cnt = cont
         area = cv2.contourArea(cont)
+'''
 
 approx = cv2.approxPolyDP(cnt,
                           30,
@@ -51,28 +54,22 @@ for i in range(len(hull)-1):
     for x1, y1 in hull[i]:
         # 给坐标做标记
         # cv2.putText(canvas, label[i], (x1, y1), cv2.FONT_HERSHEY_PLAIN, 1.0, (0, 255, 0), thickness=1)
-        l = i+1
-        for x2, y2 in hull[l]:
+        for x2, y2 in hull[i+1]:
             cv2.line(canvas,
                      (x1, y1),
                      (x2, y2),   # approx[i+1]
                      (0, 0, 255),
                      1)
-'''
-# 画延长直线
-cv2.fillConvexPoly()
-gray = cv2.cvtColor(canvas, cv2.COLOR_RGB2GRAY)
-erzhi = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_TRIANGLE)
-print (erzhi)
-# edges = cv2.Canny(erzhi, 50, 150)
-# image = preprocessing.paiting_line(erzhi, image)
-'''
 
-cv2.fillConvexPoly(canvas, hull, (0, 255, 0))
-imgCanny = cv2.Canny(canvas, 200, 300)
-image = preprocessing.paiting_line(imgCanny, image)
-
-cv2.namedWindow('Contour', 0)
-cv2.resizeWindow('Contour', 640, 480)
-cv2.imshow('Contour', image)
-cv2.waitKey(0)
+# 灰度图 二值
+canvas_gray = cv2.cvtColor(canvas, cv2.COLOR_RGB2GRAY)
+dumy, canvas_threshold = cv2.threshold(canvas_gray,
+                                       0,
+                                       255,
+                                       cv2.THRESH_BINARY)  # dumy no use
+# 概率画线
+image = preprocessing.painting_line_p(canvas_threshold, image)
+# 直接画线
+# image_end = preprocessing.painting_line(canvas_threshold, image)
+# 显示图片
+preprocessing.display_us_image(image)
